@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/task")
@@ -20,11 +21,37 @@ public class TaskController {
 
     @GetMapping
     public ResponseEntity<List<Task>> getAllTask(@RequestParam(required = false) Boolean completed){
-        return ResponseEntity.ok(taskService.getAllTask());
+        List<Task> tasks;
+        if(completed == null){
+            tasks = taskService.getAllTask().stream().filter(task -> task.getCompleted().equals(completed)).toList();
+
+        } else {
+            tasks = taskService.getAllTask();
+        }
+        return ResponseEntity.ok(tasks);
     }
 
     @PostMapping
     public ResponseEntity<Task> addTask(@RequestBody Task task){
         return new ResponseEntity<>(taskService.saveTask(task), HttpStatus.CREATED);
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Task> updateTask(@PathVariable Long id, @RequestBody Task task){
+        Task task1 = taskService.getTaskById(id);
+        task1.setCompleted(task.getCompleted());
+        task1.setTitle(task.getTitle());
+        task1.setDescription(task.getDescription());
+        return new ResponseEntity<>(taskService.saveTask(task1), HttpStatus.OK);
+    }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTask(@PathVariable Long id){
+        try{
+            taskService.deleteTaskById(id);
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        } catch (NoSuchElementException e){
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
+
 }
